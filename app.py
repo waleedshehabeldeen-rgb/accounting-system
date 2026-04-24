@@ -5,21 +5,68 @@ import os
 
 st.set_page_config(page_title="النظام المحاسبي", page_icon="📒", layout="wide", initial_sidebar_state="expanded")
 
+# ══════════════════ نظام تسجيل الدخول ══════════════════
+ALLOWED_USERS = {
+    "waleed@gmail.com":     {"name": "أستاذ وليد",      "role": "Admin",    "password": "admin123"},
+    "assistant@gmail.com":  {"name": "المساعد الخبير",   "role": "User",     "password": "user123"},
+    "new_staff@gmail.com":  {"name": "الموظف الجديد",    "role": "User",     "password": "user123"},
+}
+
+def login_screen():
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+    * { font-family: 'Cairo', sans-serif !important; }
+    .login-box { max-width:400px; margin:80px auto; background:white; border-radius:16px; padding:2.5rem; box-shadow:0 4px 30px rgba(0,0,0,0.1); direction:rtl; }
+    .login-title { text-align:center; font-size:1.8rem; font-weight:900; color:#1e2a4a; margin-bottom:0.3rem; }
+    .login-sub { text-align:center; color:#7a8fc0; font-size:0.9rem; margin-bottom:2rem; }
+    </style>
+    <div class="login-box">
+        <div class="login-title">📒 النظام المحاسبي</div>
+        <div class="login-sub">تسجيل الدخول</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.form("login_form"):
+        email    = st.text_input("📧 البريد الإلكتروني", placeholder="example@email.com")
+        password = st.text_input("🔑 كلمة المرور", type="password")
+        submit   = st.form_submit_button("دخول ←", use_container_width=True)
+        if submit:
+            user = ALLOWED_USERS.get(email.strip())
+            if user and password == user["password"]:
+                st.session_state["authenticated"] = True
+                st.session_state["user_info"]     = user
+                st.rerun()
+            else:
+                st.error("❌ البريد الإلكتروني أو كلمة المرور غلط")
+
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+if not st.session_state["authenticated"]:
+    login_screen()
+    st.stop()
+
+user_info = st.session_state["user_info"]
+is_admin  = user_info["role"] == "Admin"
+
+# ══════════════════ CSS ══════════════════
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 *, *::before, *::after { font-family: 'Cairo', sans-serif !important; box-sizing: border-box; }
 body, .stApp { direction: rtl; background: #f4f6f9; color: #1a1a2e; }
 
-/* ── إخفاء زر طي الـ sidebar ── */
-[data-testid="collapsedControl"] { display: none !important; }
-button[kind="headerNoPadding"] { display: none !important; }
-section[data-testid="stSidebar"] > div:first-child > div:first-child button { display: none !important; }
+/* إخفاء زر طي الـ sidebar وأي عناصر غير مرغوبة */
+[data-testid="collapsedControl"] { display:none !important; }
+[data-testid="stSidebarCollapseButton"] { display:none !important; }
+button[data-testid="baseButton-headerNoPadding"] { display:none !important; }
 
-[data-testid="stSidebar"] { background: #1e2a4a !important; min-width: 220px !important; max-width: 220px !important; }
-[data-testid="stSidebar"] * { color: #c8d6f0 !important; }
-[data-testid="stSidebar"] .sidebar-logo { text-align:center; padding:1.2rem 0 0.5rem; font-size:1.4rem; font-weight:900; color:white !important; border-bottom:1px solid #2d3f6e; margin-bottom:0.5rem; }
-[data-testid="stSidebar"] .sidebar-section { font-size:0.7rem; font-weight:700; color:#7a8fc0 !important; letter-spacing:1px; padding:1rem 1rem 0.3rem; margin:0; }
+[data-testid="stSidebar"] { background:#1e2a4a !important; min-width:230px !important; max-width:230px !important; }
+[data-testid="stSidebar"] * { color:#c8d6f0 !important; }
+[data-testid="stSidebar"] .sidebar-logo { text-align:center; padding:1rem 0 0.5rem; font-size:1.3rem; font-weight:900; color:white !important; border-bottom:1px solid #2d3f6e; margin-bottom:0.5rem; }
+[data-testid="stSidebar"] .sidebar-section { font-size:0.7rem; font-weight:700; color:#7a8fc0 !important; letter-spacing:1px; padding:0.8rem 1rem 0.3rem; margin:0; }
+[data-testid="stSidebar"] .user-info { padding:0.5rem 1rem; background:#2d3f6e; border-radius:8px; margin:0.5rem; font-size:0.82rem; }
 
 input, textarea, select { color:#1a1a2e !important; background:white !important; border:1px solid #dde3f0 !important; border-radius:8px !important; direction:rtl !important; }
 input::placeholder { color:#a0aec0 !important; }
@@ -32,6 +79,7 @@ label { color:#2d3f6e !important; font-weight:600 !important; font-size:0.88rem 
 .stat-card { background:white; border-radius:12px; padding:1rem 1.5rem; box-shadow:0 1px 8px rgba(0,0,0,0.06); border-top:4px solid #3b5bdb; text-align:center; }
 .stat-card.green { border-top-color:#2f9e44; }
 .stat-card.orange { border-top-color:#e67700; }
+.stat-card.red { border-top-color:#c92a2a; }
 .stat-card .s-num { font-size:1.7rem; font-weight:900; color:#1e2a4a; line-height:1; }
 .stat-card .s-lbl { font-size:0.8rem; color:#7a8fc0; margin-top:4px; }
 
@@ -62,24 +110,11 @@ label { color:#2d3f6e !important; font-weight:600 !important; font-size:0.88rem 
 .info-box { background:#e8f4fd; border:1px solid #3b5bdb; border-radius:8px; padding:0.8rem 1rem; margin-bottom:1rem; color:#1e2a4a; font-size:0.88rem; }
 .danger-box { background:#fff0f0; border:1px solid #c92a2a; border-radius:8px; padding:0.8rem 1rem; margin-bottom:1rem; color:#c92a2a; font-size:0.88rem; }
 .add-form-box { background:white; border-radius:12px; padding:1.5rem; box-shadow:0 2px 12px rgba(0,0,0,0.08); border:1px solid #e8ecf8; margin-top:1rem; }
-
-/* ── جدول ميزان المراجعة ── */
-.tb-table { width:100%; border-collapse:collapse; background:white; border-radius:12px; overflow:hidden; box-shadow:0 1px 8px rgba(0,0,0,0.06); }
-.tb-table th { background:#1e2a4a; color:white; padding:10px 14px; text-align:right; font-size:0.88rem; }
-.tb-table td { padding:8px 14px; border-bottom:1px solid #f0f3fa; font-size:0.85rem; color:#1a1a2e; }
-.tb-table tr:hover td { background:#f0f4ff; }
-.tb-table tr.total-row td { background:#1e2a4a; color:white; font-weight:900; }
-.tb-table .debit { color:#c92a2a; font-weight:700; }
-.tb-table .credit { color:#2f9e44; font-weight:700; }
-.tb-table .balanced { color:#2f9e44; font-weight:900; text-align:center; }
-.tb-table .unbalanced { color:#c92a2a; font-weight:900; text-align:center; }
-
-/* ── دفتر الأستاذ ── */
 .ledger-header { background:white; border-radius:12px; padding:1rem 1.5rem; margin-bottom:1rem; box-shadow:0 1px 8px rgba(0,0,0,0.06); border-right:5px solid #2f9e44; }
-.ledger-balance { font-size:1.8rem; font-weight:900; }
 </style>
 """, unsafe_allow_html=True)
 
+# ══════════════════ DB ══════════════════
 DB_PATH = "accounting.db"
 
 def get_conn():
@@ -132,8 +167,17 @@ def load_accounts(search="", l1="الكل"):
         q += " AND (name LIKE ? OR code LIKE ?)"; p += [f"%{search}%",f"%{search}%"]
     if l1 != "الكل":
         q += " AND level1=?"; p.append(l1)
-    q += " ORDER BY code"
+    q += " ORDER BY name COLLATE NOCASE"
     df = pd.read_sql(q, conn, params=p); conn.close(); return df
+
+@st.cache_data(ttl=300)
+def get_all_leaf_accounts():
+    """كل الحسابات النهائية مرتبة أبجدياً للقوائم المنسدلة"""
+    conn = get_conn()
+    df = pd.read_sql(
+        "SELECT code, name, level1, acc_level FROM chart_of_accounts WHERE is_leaf=1 ORDER BY name COLLATE NOCASE",
+        conn)
+    conn.close(); return df
 
 def get_account_by_code(code):
     conn = get_conn()
@@ -143,7 +187,9 @@ def get_account_by_code(code):
 
 def get_children_by_parent(parent_code):
     conn = get_conn()
-    df = pd.read_sql("SELECT * FROM chart_of_accounts WHERE parent_code=? ORDER BY CAST(code AS INTEGER)", conn, params=(str(parent_code),))
+    df = pd.read_sql(
+        "SELECT * FROM chart_of_accounts WHERE parent_code=? ORDER BY CAST(code AS INTEGER)",
+        conn, params=(str(parent_code),))
     conn.close(); return df
 
 def get_l1_opts():
@@ -202,7 +248,7 @@ def add_account(parent_row, code, name, acc_type):
             (*levels, code, name, new_level, is_leaf, parent_code))
         conn.execute("UPDATE chart_of_accounts SET is_leaf=0 WHERE code=?", (parent_code,))
         conn.commit()
-        load_all_accounts.clear(); get_cumulative_balances_all.clear()
+        load_all_accounts.clear(); get_cumulative_balances_all.clear(); get_all_leaf_accounts.clear()
         return True, "✅ تم إضافة الحساب بنجاح"
     except sqlite3.IntegrityError:
         return False, "❌ الكود موجود بالفعل"
@@ -217,7 +263,7 @@ def delete_account_db(acc_id, code, parent_code):
         if siblings == 0:
             conn.execute("UPDATE chart_of_accounts SET is_leaf=1 WHERE code=?", (str(parent_code),))
     conn.commit()
-    load_all_accounts.clear(); get_cumulative_balances_all.clear()
+    load_all_accounts.clear(); get_cumulative_balances_all.clear(); get_all_leaf_accounts.clear()
     conn.close()
 
 def import_accounts_df(df, mode="add"):
@@ -275,7 +321,7 @@ def import_accounts_df(df, mode="add"):
     for pc in parent_codes:
         conn.execute("UPDATE chart_of_accounts SET is_leaf=0 WHERE code=?", (pc,))
     conn.commit(); conn.close()
-    load_all_accounts.clear(); get_cumulative_balances_all.clear()
+    load_all_accounts.clear(); get_cumulative_balances_all.clear(); get_all_leaf_accounts.clear()
     return ins, skp
 
 def import_journal_df(df, mode="add"):
@@ -315,28 +361,32 @@ if os.path.exists(excel_path):
             df_init = pd.read_excel(excel_path, engine="openpyxl")
             import_accounts_df(df_init, mode="replace")
 
-if "drill_path" not in st.session_state: st.session_state.drill_path = []
-if "adding_to" not in st.session_state: st.session_state.adding_to = None
-if "editing_code" not in st.session_state: st.session_state.editing_code = None
+if "drill_path"    not in st.session_state: st.session_state.drill_path    = []
+if "adding_to"     not in st.session_state: st.session_state.adding_to     = None
+if "editing_code"  not in st.session_state: st.session_state.editing_code  = None
 
 # ══════════════════ Sidebar ══════════════════
 with st.sidebar:
     st.markdown('<div class="sidebar-logo">📒 المحاسبي</div>', unsafe_allow_html=True)
-    st.markdown('<p class="sidebar-section">الحسابات العامة</p>', unsafe_allow_html=True)
-    page = st.radio("nav", [
-        "🏠  الرئيسية",
-        "📋  دليل الحسابات",
-        "⚖️  ميزان المراجعة",
-        "📒  دفتر الأستاذ",
-        "✏️  تعديل / حذف",
-        "📤  استيراد البيانات",
-    ], label_visibility="collapsed")
+    st.markdown(f'<div class="user-info">👤 {user_info["name"]}<br><span style="color:#adc8e6;font-size:.75rem">{user_info["role"]}</span></div>', unsafe_allow_html=True)
+    st.markdown('<p class="sidebar-section">القائمة الرئيسية</p>', unsafe_allow_html=True)
+
+    pages = ["🏠  الرئيسية", "📋  دليل الحسابات", "⚖️  ميزان المراجعة", "📒  دفتر الأستاذ"]
+    if is_admin:
+        pages += ["✏️  تعديل / حذف", "📤  استيراد البيانات"]
+
+    page = st.radio("nav", pages, label_visibility="collapsed")
+
     st.markdown("---")
     total,leaves,_,j_total = get_stats()
-    st.markdown(f'<div style="color:#7a8fc0;font-size:.8rem;padding:.2rem 1rem;">الحسابات: <b style="color:white">{total:,}</b></div>', unsafe_allow_html=True)
-    st.markdown(f'<div style="color:#7a8fc0;font-size:.8rem;padding:.2rem 1rem;">الرئيسية: <b style="color:white">{total-leaves:,}</b></div>', unsafe_allow_html=True)
-    st.markdown(f'<div style="color:#7a8fc0;font-size:.8rem;padding:.2rem 1rem;">النهائية: <b style="color:white">{leaves:,}</b></div>', unsafe_allow_html=True)
-    st.markdown(f'<div style="color:#7a8fc0;font-size:.8rem;padding:.2rem 1rem;">الحركات: <b style="color:white">{j_total:,}</b></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color:#7a8fc0;font-size:.8rem;padding:.1rem 1rem;">الحسابات: <b style="color:white">{total:,}</b></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color:#7a8fc0;font-size:.8rem;padding:.1rem 1rem;">النهائية: <b style="color:white">{leaves:,}</b></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color:#7a8fc0;font-size:.8rem;padding:.1rem 1rem;">الحركات: <b style="color:white">{j_total:,}</b></div>', unsafe_allow_html=True)
+    st.markdown("---")
+    if st.button("🚪 تسجيل الخروج", use_container_width=True):
+        st.session_state["authenticated"] = False
+        st.session_state["user_info"] = None
+        st.rerun()
 
 # ══════════════════ Add Form ══════════════════
 def render_add_form(parent_row):
@@ -361,20 +411,19 @@ def render_add_form(parent_row):
                 ], key=f"type_{parent_row['code']}")
                 acc_type = "leaf" if "نهائي" in acc_type_label else "parent"
         col_s,col_c = st.columns(2)
-        with col_s: save = st.form_submit_button("💾 حفظ", use_container_width=True)
+        with col_s: save   = st.form_submit_button("💾 حفظ",   use_container_width=True)
         with col_c: cancel = st.form_submit_button("❌ إلغاء", use_container_width=True)
         if save:
             if not new_code or not new_name: st.error("الكود والاسم مطلوبان")
             else:
                 ok,msg = add_account(parent_row, new_code, new_name, acc_type)
-                if ok:
-                    st.success(msg); st.session_state.adding_to = None; st.rerun()
+                if ok: st.success(msg); st.session_state.adding_to = None; st.rerun()
                 else: st.error(msg)
         if cancel:
             st.session_state.adding_to = None; st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ══════════════════ Edit/Delete inline ══════════════════
+# ══════════════════ Edit/Delete ══════════════════
 def render_edit_delete_inline(code):
     r = get_account_by_code(code)
     if r is None: st.session_state.editing_code = None; return
@@ -393,7 +442,7 @@ def render_edit_delete_inline(code):
     </div>""", unsafe_allow_html=True)
     if has_tx:
         st.markdown('<div class="danger-box">🔒 هذا الحساب عليه معاملات مالية — لا يمكن تعديله أو حذفه</div>', unsafe_allow_html=True)
-        if st.button("✖️ إغلاق"): st.session_state.editing_code = None; st.rerun()
+        if st.button("✖️ إغلاق", key=f"close_{code}"): st.session_state.editing_code = None; st.rerun()
         return
     tab1,tab2 = st.tabs(["✏️ تعديل","🗑️ حذف"])
     with tab1:
@@ -411,7 +460,8 @@ def render_edit_delete_inline(code):
                         levels[lvl-1] = new_name
                         conn.execute("UPDATE chart_of_accounts SET level1=?,level2=?,level3=?,level4=?,level5=?,level6=?,code=?,name=? WHERE id=?",
                             (*levels,new_code,new_name,r["id"]))
-                        conn.commit(); load_all_accounts.clear(); get_cumulative_balances_all.clear()
+                        conn.commit()
+                        load_all_accounts.clear(); get_cumulative_balances_all.clear(); get_all_leaf_accounts.clear()
                         st.session_state.editing_code = None; st.success("✅ تم التعديل"); st.rerun()
                     except sqlite3.IntegrityError: st.error("❌ الكود مستخدم بالفعل")
                     finally: conn.close()
@@ -475,9 +525,9 @@ def render_drill_down(parent_code=None):
                 else:
                     st.markdown('<div style="text-align:left;padding-top:10px;color:#ccc">—</div>', unsafe_allow_html=True)
             with col3:
-                if st.button("⚙️", key=f"edit_{code}", help="تعديل أو حذف"):
+                if is_admin and st.button("⚙️", key=f"edit_{code}", help="تعديل أو حذف"):
                     st.session_state.editing_code = code; st.rerun()
-    if parent_code is not None and current_level < 5:
+    if is_admin and parent_code is not None and current_level < 5:
         st.markdown("---")
         parent_row_for_add = get_account_by_code(parent_code)
         if parent_row_for_add is not None:
@@ -533,18 +583,17 @@ elif page == "📋  دليل الحسابات":
         current_code = st.session_state.drill_path[-1][0] if st.session_state.drill_path else None
         render_drill_down(current_code)
 
-# ══════════════════ ميزان المراجعة ══════════════════
 elif page == "⚖️  ميزان المراجعة":
-    st.markdown('<div class="page-header"><p class="ph-title">⚖️ ميزان المراجعة</p><p class="ph-sub">إجمالي المدين والدائن لكل حساب</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-header"><p class="ph-title">⚖️ ميزان المراجعة</p><p class="ph-sub">إجمالي المدين والدائن لكل حساب نهائي</p></div>', unsafe_allow_html=True)
 
-    col1,col2,col3 = st.columns([2,2,2])
-    with col1:
-        lvl_filter = st.selectbox("المستوى", [0,1,2,3,4,5,6],
-                                   format_func=lambda x: "كل المستويات" if x==0 else f"مستوى {x}")
+    col1,col2 = st.columns([2,2])
+    with col1: l1_tb = st.selectbox("القسم الرئيسي", get_l1_opts(), key="tb_l1")
     with col2:
-        l1_tb = st.selectbox("القسم الرئيسي", get_l1_opts(), key="tb_l1")
-    with col3:
-        show_zero = st.checkbox("إظهار الحسابات ذات الرصيد صفر", value=False)
+        leaf_accs = get_all_leaf_accounts()
+        if l1_tb != "الكل":
+            leaf_accs = leaf_accs[leaf_accs["level1"] == l1_tb]
+        lvl_opts = sorted(leaf_accs["acc_level"].unique().tolist())
+        lvl_tb = st.selectbox("المستوى", ["الكل"] + [f"مستوى {l}" for l in lvl_opts], key="tb_lvl")
 
     conn = get_conn()
     q = """
@@ -556,134 +605,139 @@ elif page == "⚖️  ميزان المراجعة":
         WHERE c.is_leaf = 1
     """
     params = []
-    if lvl_filter > 0:
-        q += " AND c.acc_level=?"; params.append(lvl_filter)
     if l1_tb != "الكل":
         q += " AND c.level1=?"; params.append(l1_tb)
+    if lvl_tb != "الكل":
+        lvl_num = int(lvl_tb.replace("مستوى ",""))
+        q += " AND c.acc_level=?"; params.append(lvl_num)
     q += " GROUP BY c.code, c.name, c.acc_level, c.level1 ORDER BY c.code"
     tb_df = pd.read_sql(q, conn, params=params)
     conn.close()
 
-    if not show_zero:
-        tb_df = tb_df[(tb_df["total_debit"] > 0) | (tb_df["total_credit"] > 0)]
+    # فلتر الأرصدة غير الصفرية
+    tb_active = tb_df[(tb_df["total_debit"]>0) | (tb_df["total_credit"]>0)]
 
-    if tb_df.empty:
-        st.info("لا توجد بيانات")
+    if tb_active.empty:
+        st.info("لا توجد حركات")
     else:
-        tb_df["الرصيد"] = tb_df["total_debit"] - tb_df["total_credit"]
-        tb_df["نوع الرصيد"] = tb_df["الرصيد"].apply(lambda x: "مدين" if x>=0 else "دائن")
-        tb_df["الرصيد"] = tb_df["الرصيد"].abs()
-
-        total_d = tb_df["total_debit"].sum()
-        total_c = tb_df["total_credit"].sum()
+        total_d = tb_active["total_debit"].sum()
+        total_c = tb_active["total_credit"].sum()
         is_balanced = abs(total_d - total_c) < 0.01
 
-        # إحصائيات
         col1,col2,col3 = st.columns(3)
-        with col1: st.markdown(f'<div class="stat-card"><div class="s-num" style="color:#c92a2a">{total_d:,.2f}</div><div class="s-lbl">إجمالي المدين</div></div>', unsafe_allow_html=True)
-        with col2: st.markdown(f'<div class="stat-card"><div class="s-num" style="color:#2f9e44">{total_c:,.2f}</div><div class="s-lbl">إجمالي الدائن</div></div>', unsafe_allow_html=True)
+        with col1: st.markdown(f'<div class="stat-card red"><div class="s-num" style="color:#c92a2a">{total_d:,.2f}</div><div class="s-lbl">إجمالي المدين</div></div>', unsafe_allow_html=True)
+        with col2: st.markdown(f'<div class="stat-card green"><div class="s-num" style="color:#2f9e44">{total_c:,.2f}</div><div class="s-lbl">إجمالي الدائن</div></div>', unsafe_allow_html=True)
         with col3:
-            status = "✅ ميزان متوازن" if is_balanced else f"❌ فرق: {abs(total_d-total_c):,.2f}"
+            status = "✅ متوازن" if is_balanced else f"❌ فرق: {abs(total_d-total_c):,.2f}"
             color  = "#2f9e44" if is_balanced else "#c92a2a"
-            st.markdown(f'<div class="stat-card"><div class="s-num" style="color:{color};font-size:1.2rem">{status}</div><div class="s-lbl">حالة الميزان</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="s-num" style="color:{color};font-size:1.1rem">{status}</div><div class="s-lbl">حالة الميزان</div></div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
+        tb_active = tb_active.copy()
+        tb_active["bal"] = tb_active["total_debit"] - tb_active["total_credit"]
 
-        # جدول
         display = pd.DataFrame({
-            "الكود":        tb_df["code"],
-            "اسم الحساب":  tb_df["name"],
-            "القسم":        tb_df["level1"],
-            "المستوى":      tb_df["acc_level"].apply(lambda x: f"مستوى {x}"),
-            "مدين":         tb_df["total_debit"].apply(lambda x: f"{x:,.2f}" if x>0 else "—"),
-            "دائن":         tb_df["total_credit"].apply(lambda x: f"{x:,.2f}" if x>0 else "—"),
-            "الرصيد":       tb_df["الرصيد"].apply(lambda x: f"{x:,.2f}"),
-            "النوع":        tb_df["نوع الرصيد"],
+            "الكود":    tb_active["code"],
+            "الحساب":   tb_active["name"],
+            "القسم":    tb_active["level1"],
+            "مدين":     tb_active["total_debit"].apply(lambda x: f"{x:,.2f}" if x>0 else "—"),
+            "دائن":     tb_active["total_credit"].apply(lambda x: f"{x:,.2f}" if x>0 else "—"),
+            "الرصيد":   tb_active["bal"].apply(lambda x: f"{abs(x):,.2f}"),
+            "النوع":    tb_active["bal"].apply(lambda x: "مدين" if x>=0 else "دائن"),
         })
         st.dataframe(display, use_container_width=True, hide_index=True, height=500)
 
-        # تحميل
+        # إجمالي في الأسفل
+        st.markdown(f"""
+        <div style="background:#1e2a4a;color:white;padding:0.8rem 1.2rem;border-radius:8px;margin-top:0.5rem;display:flex;gap:2rem;direction:rtl">
+            <span><b>{len(tb_active):,}</b> حساب</span>
+            <span>إجمالي المدين: <b style="color:#ff9999">{total_d:,.2f}</b></span>
+            <span>إجمالي الدائن: <b style="color:#99ffaa">{total_c:,.2f}</b></span>
+        </div>""", unsafe_allow_html=True)
+
         csv = display.to_csv(index=False, encoding="utf-8-sig")
         st.download_button("⬇️ تحميل ميزان المراجعة", data=csv, file_name="ميزان_المراجعة.csv", mime="text/csv")
 
-# ══════════════════ دفتر الأستاذ ══════════════════
 elif page == "📒  دفتر الأستاذ":
     st.markdown('<div class="page-header"><p class="ph-title">📒 دفتر الأستاذ</p><p class="ph-sub">حركات كل حساب مدين ودائن</p></div>', unsafe_allow_html=True)
 
-    col1,col2 = st.columns([3,1])
-    with col1: acc_search = st.text_input("🔍 ابحث عن الحساب", placeholder="اكتب اسم أو كود الحساب...")
-    with col2: show_all = st.checkbox("كل الحركات", value=False)
+    # قائمة منسدلة أبجدياً بدل البحث
+    leaf_accs = get_all_leaf_accounts()
 
-    acc_df = load_accounts(acc_search) if acc_search else pd.DataFrame()
-    selected_acc = None
+    if leaf_accs.empty:
+        st.info("لا توجد حسابات نهائية")
+    else:
+        col1,col2 = st.columns([2,2])
+        with col1:
+            l1_ledger = st.selectbox("القسم الرئيسي", ["الكل"] + leaf_accs["level1"].unique().tolist(), key="led_l1")
+        filtered_accs = leaf_accs if l1_ledger == "الكل" else leaf_accs[leaf_accs["level1"] == l1_ledger]
 
-    if not acc_df.empty:
-        # فلتر الحسابات النهائية فقط
-        leaf_df = acc_df[acc_df["is_leaf"]==1]
-        if leaf_df.empty:
-            st.info("ابحث عن حساب نهائي (📄) لعرض حركاته")
-        else:
-            opts = {f"{r['code']} — {r['name']}": r for _,r in leaf_df.iterrows()}
-            sel  = st.selectbox("اختر الحساب", list(opts.keys()))
-            selected_acc = opts[sel]
+        with col2:
+            acc_options = {f"{r['code']} — {r['name']}": r["code"] for _,r in filtered_accs.iterrows()}
+            if acc_options:
+                selected_label = st.selectbox("اختر الحساب", list(acc_options.keys()), key="led_acc")
+                selected_code  = acc_options[selected_label]
+            else:
+                st.info("لا توجد حسابات في هذا القسم")
+                selected_code = None
 
-    if selected_acc is not None:
-        code = str(selected_acc["code"])
-        name = str(selected_acc["name"])
-        path = get_path(selected_acc)
+        if selected_code:
+            r = get_account_by_code(selected_code)
+            code = str(r["code"]); name = str(r["name"])
+            path = get_path(r)
 
-        # جيب الحركات
-        conn = get_conn()
-        q = "SELECT * FROM journal_entries WHERE account_code=?"
-        params = [code]
-        if not show_all:
-            q += " ORDER BY entry_date, id"
-        else:
-            q += " ORDER BY entry_date, id"
-        entries = pd.read_sql(q, conn, params=params)
-        conn.close()
+            conn = get_conn()
+            entries = pd.read_sql(
+                "SELECT * FROM journal_entries WHERE account_code=? ORDER BY entry_date, id",
+                conn, params=(code,))
+            conn.close()
 
-        total_d = entries["debit"].sum()
-        total_c = entries["credit"].sum()
-        bal     = total_d - total_c
-        bal_cls = "debit" if bal >= 0 else "credit"
-        bal_lbl = "مدين" if bal >= 0 else "دائن"
+            total_d = entries["debit"].sum()
+            total_c = entries["credit"].sum()
+            bal     = total_d - total_c
+            bal_cls = "debit" if bal>=0 else "credit"
+            bal_lbl = "مدين" if bal>=0 else "دائن"
 
-        # header الحساب
-        st.markdown(f"""
-        <div class="ledger-header">
-            <div style="font-size:1.1rem;font-weight:900;color:#1e2a4a">📄 {name}</div>
-            <div style="color:#7a8fc0;font-size:0.8rem;margin:4px 0">{breadcrumb_html(path)}</div>
-            <div style="display:flex;gap:2rem;margin-top:0.5rem">
-                <div><span style="color:#c92a2a;font-weight:900;font-size:1.1rem">{total_d:,.2f}</span><br><span style="font-size:.75rem;color:#666">إجمالي المدين</span></div>
-                <div><span style="color:#2f9e44;font-weight:900;font-size:1.1rem">{total_c:,.2f}</span><br><span style="font-size:.75rem;color:#666">إجمالي الدائن</span></div>
-                <div><span style="color:{'#c92a2a' if bal>=0 else '#2f9e44'};font-weight:900;font-size:1.3rem">{abs(bal):,.2f} {bal_lbl}</span><br><span style="font-size:.75rem;color:#666">الرصيد</span></div>
-            </div>
-        </div>""", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="ledger-header">
+                <div style="font-size:1.1rem;font-weight:900;color:#1e2a4a">📄 {name}</div>
+                {breadcrumb_html(path)}
+                <div style="display:flex;gap:2rem;margin-top:0.5rem;flex-wrap:wrap">
+                    <div><span style="color:#c92a2a;font-weight:900;font-size:1.1rem">{total_d:,.2f}</span><br><span style="font-size:.75rem;color:#666">إجمالي المدين</span></div>
+                    <div><span style="color:#2f9e44;font-weight:900;font-size:1.1rem">{total_c:,.2f}</span><br><span style="font-size:.75rem;color:#666">إجمالي الدائن</span></div>
+                    <div><span style="color:{'#c92a2a' if bal>=0 else '#2f9e44'};font-weight:900;font-size:1.3rem">{abs(bal):,.2f} {bal_lbl}</span><br><span style="font-size:.75rem;color:#666">الرصيد</span></div>
+                    <div><span style="color:#1e2a4a;font-weight:900;font-size:1.1rem">{len(entries):,}</span><br><span style="font-size:.75rem;color:#666">عدد الحركات</span></div>
+                </div>
+            </div>""", unsafe_allow_html=True)
 
-        if entries.empty:
-            st.info("لا توجد حركات على هذا الحساب")
-        else:
-            # حساب الرصيد التراكمي
-            entries = entries.copy()
-            entries["الرصيد التراكمي"] = (entries["debit"] - entries["credit"]).cumsum()
+            if entries.empty:
+                st.info("لا توجد حركات على هذا الحساب")
+            else:
+                entries = entries.copy()
+                entries["الرصيد التراكمي"] = (entries["debit"] - entries["credit"]).cumsum()
+                display = pd.DataFrame({
+                    "التاريخ":         entries["entry_date"],
+                    "رقم القيد":       entries["entry_no"],
+                    "الوصف":           entries["description"],
+                    "مدين":            entries["debit"].apply(lambda x: f"{x:,.2f}" if x>0 else "—"),
+                    "دائن":            entries["credit"].apply(lambda x: f"{x:,.2f}" if x>0 else "—"),
+                    "الرصيد التراكمي": entries["الرصيد التراكمي"].apply(lambda x: f"{abs(x):,.2f} {'مدين' if x>=0 else 'دائن'}"),
+                })
+                st.dataframe(display, use_container_width=True, hide_index=True, height=450)
 
-            display = pd.DataFrame({
-                "التاريخ":          entries["entry_date"],
-                "رقم القيد":        entries["entry_no"],
-                "الوصف":            entries["description"],
-                "مدين":             entries["debit"].apply(lambda x: f"{x:,.2f}" if x>0 else "—"),
-                "دائن":             entries["credit"].apply(lambda x: f"{x:,.2f}" if x>0 else "—"),
-                "الرصيد التراكمي":  entries["الرصيد التراكمي"].apply(lambda x: f"{abs(x):,.2f} {'مدين' if x>=0 else 'دائن'}"),
-            })
-            st.dataframe(display, use_container_width=True, hide_index=True, height=500)
+                # إجمالي في الأسفل
+                st.markdown(f"""
+                <div style="background:#1e2a4a;color:white;padding:0.8rem 1.2rem;border-radius:8px;margin-top:0.5rem;display:flex;gap:2rem;direction:rtl">
+                    <span>عدد الحركات: <b>{len(entries):,}</b></span>
+                    <span>إجمالي المدين: <b style="color:#ff9999">{total_d:,.2f}</b></span>
+                    <span>إجمالي الدائن: <b style="color:#99ffaa">{total_c:,.2f}</b></span>
+                    <span>الرصيد: <b style="color:{'#ff9999' if bal>=0 else '#99ffaa'}">{abs(bal):,.2f} {bal_lbl}</b></span>
+                </div>""", unsafe_allow_html=True)
 
-            csv = display.to_csv(index=False, encoding="utf-8-sig")
-            st.download_button(f"⬇️ تحميل دفتر {name}", data=csv, file_name=f"دفتر_الاستاذ_{code}.csv", mime="text/csv")
-    elif acc_search:
-        st.info("لا توجد نتائج")
+                csv = display.to_csv(index=False, encoding="utf-8-sig")
+                st.download_button(f"⬇️ تحميل دفتر {name}", data=csv, file_name=f"دفتر_{code}.csv", mime="text/csv")
 
-elif page == "✏️  تعديل / حذف":
+elif page == "✏️  تعديل / حذف" and is_admin:
     st.markdown('<div class="page-header"><p class="ph-title">✏️ تعديل أو حذف حساب</p><p class="ph-sub">ابحث عن الحساب وعدّله أو احذفه</p></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">💡 يمكنك أيضاً التعديل والحذف من داخل شجرة الحسابات بالضغط على ⚙️</div>', unsafe_allow_html=True)
     search = st.text_input("🔍 ابحث عن الحساب بالاسم أو الكود", placeholder="اكتب هنا...")
@@ -699,7 +753,7 @@ elif page == "✏️  تعديل / حذف":
     elif search:
         st.info("لا توجد نتائج")
 
-elif page == "📤  استيراد البيانات":
+elif page == "📤  استيراد البيانات" and is_admin:
     st.markdown('<div class="page-header"><p class="ph-title">📤 استيراد البيانات</p><p class="ph-sub">رفع شجرة الحسابات وحركات دفتر الأستاذ</p></div>', unsafe_allow_html=True)
     tab1,tab2 = st.tabs(["🌳 شجرة الحسابات","📒 حركات دفتر الأستاذ"])
     with tab1:
