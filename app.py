@@ -1,4 +1,51 @@
 import streamlit as st
+
+# 1. قائمة الإيميلات المصرح لها وصلاحياتها
+# يمكنك إضافة إيميلات الموظفين هنا بكل سهولة
+ALLOWED_USERS = {
+    "waleed@gmail.com": {"name": "أستاذ وليد", "role": "Admin"},
+    "assistant@gmail.com": {"name": "المساعد الخبير", "role": "User"},
+    "new_staff@gmail.com": {"name": "الموظف الجديد", "role": "User"}
+}
+
+def login_screen():
+    st.title("🔐 تسجيل الدخول للنظام المحاسبي")
+    
+    with st.form("login_form"):
+        email = st.text_input("البريد الإلكتروني")
+        password = st.text_input("كلمة المرور", type="password")
+        submit = st.form_submit_button("دخول")
+        
+        if submit:
+            # التحقق من وجود الإيميل في القائمة وكلمة السر (مثال: admin123)
+            if email in ALLOWED_USERS and password == "admin123":
+                st.session_state["authenticated"] = True
+                st.session_state["user_info"] = ALLOWED_USERS[email]
+                st.success(f"أهلاً بك {ALLOWED_USERS[email]['name']}")
+                st.rerun()
+            else:
+                st.error("الإيميل غير مسجل أو كلمة المرور خطأ")
+
+# التحقق من حالة تسجيل الدخول
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+if not st.session_state["authenticated"]:
+    login_screen()
+    st.stop()
+
+# --- من هنا يبدأ كود برنامجك الأصلي ---
+user_role = st.session_state["user_info"]["role"]
+st.sidebar.write(f"المستخدم: {st.session_state['user_info']['name']}")
+st.sidebar.write(f"الصلاحية: {user_role}")
+
+# مثال لاستخدام الصلاحيات:
+if user_role == "Admin":
+    if st.sidebar.button("⚙️ إعدادات النظام"):
+        st.write("هذه الصفحة للمدير فقط")
+
+
+import streamlit as st
 import pandas as pd
 import sqlite3
 import os
