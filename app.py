@@ -255,9 +255,9 @@ def add_account(parent_row, code, name, acc_type):
     finally:
         conn.close()
 
-def delete_account_db(acc_id, code, parent_code):
+def delete_account_db(code, parent_code):
     conn = get_conn()
-    conn.execute("DELETE FROM chart_of_accounts WHERE id=?", (acc_id,))
+    conn.execute("DELETE FROM chart_of_accounts WHERE code=?", (str(code),))
     if parent_code:
         siblings = conn.execute("SELECT COUNT(*) FROM chart_of_accounts WHERE parent_code=?", (str(parent_code),)).fetchone()[0]
         if siblings == 0:
@@ -481,11 +481,12 @@ def render_edit_delete_inline(code):
         if not is_leaf:
             st.error("❌ لا يمكن حذف حساب رئيسي — احذف الحسابات الفرعية أولاً")
         else:
-            st.warning(f"⚠️ هتحذف الحساب: **{r['name']}**")
+            st.markdown(f'<div style="background:#fff3cd;border:1px solid #f59f00;border-radius:8px;padding:0.8rem 1.2rem;color:#7d4e00;font-weight:700;font-size:1rem;direction:rtl">⚠️ هتحذف الحساب: {r["name"]}</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             col_d,col_c2 = st.columns(2)
             with col_d:
                 if st.button("🗑️ تأكيد الحذف", type="primary", use_container_width=True):
-                    delete_account_db(r["id"],code,str(r.get("parent_code","")))
+                    delete_account_db(code, str(r.get("parent_code","")))
                     st.session_state.editing_code = None; st.success("✅ تم الحذف"); st.rerun()
             with col_c2:
                 if st.button("❌ إلغاء", use_container_width=True, key=f"cancel_del_{code}"):
