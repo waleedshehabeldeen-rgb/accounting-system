@@ -607,3 +607,4 @@ elif page == "📤  استيراد البيانات":
                         ins_j = import_journal_df(df_j, "add" if "أضف" in mode_j else "replace")
                     st.success(f"✅ تم استيراد {ins_j:,} حركة!"); st.rerun()
             except Exception as e: st.error(f"❌ خطأ: {e}")
+
