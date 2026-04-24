@@ -111,6 +111,11 @@ label { color:#2d3f6e !important; font-weight:600 !important; font-size:0.88rem 
 .danger-box { background:#fff0f0; border:1px solid #c92a2a; border-radius:8px; padding:0.8rem 1rem; margin-bottom:1rem; color:#c92a2a; font-size:0.88rem; }
 .add-form-box { background:white; border-radius:12px; padding:1.5rem; box-shadow:0 2px 12px rgba(0,0,0,0.08); border:1px solid #e8ecf8; margin-top:1rem; }
 .ledger-header { background:white; border-radius:12px; padding:1rem 1.5rem; margin-bottom:1rem; box-shadow:0 1px 8px rgba(0,0,0,0.06); border-right:5px solid #2f9e44; }
+
+/* fix file uploader dark background */
+[data-testid="stFileUploader"] section { background:white !important; border:2px dashed #3b5bdb !important; border-radius:10px !important; }
+[data-testid="stFileUploader"] section * { color:#2d3f6e !important; }
+[data-testid="stFileUploaderDropzone"] { background:white !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -501,7 +506,7 @@ def render_tree(parent_code=None, depth=0):
     if parent_code is None:
         conn = get_conn()
         current_df = pd.read_sql(
-            "SELECT * FROM chart_of_accounts WHERE (parent_code='' OR parent_code IS NULL) ORDER BY CAST(code AS INTEGER)",
+            "SELECT * FROM chart_of_accounts WHERE acc_level=1 ORDER BY CAST(code AS INTEGER)",
             conn)
         conn.close()
     else:
