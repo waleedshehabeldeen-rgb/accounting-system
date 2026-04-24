@@ -482,15 +482,11 @@ def render_edit_delete_inline(code):
             st.error("❌ لا يمكن حذف حساب رئيسي — احذف الحسابات الفرعية أولاً")
         else:
             st.warning(f"⚠️ هتحذف الحساب: **{r['name']}**")
-            confirm = st.text_input("اكتب اسم الحساب للتأكيد بالظبط", key=f"conf_{code}",
-                                    placeholder=str(r['name']))
             col_d,col_c2 = st.columns(2)
             with col_d:
                 if st.button("🗑️ تأكيد الحذف", type="primary", use_container_width=True):
-                    if confirm.strip() == str(r["name"]).strip():
-                        delete_account_db(r["id"],code,str(r.get("parent_code","")))
-                        st.session_state.editing_code = None; st.success("✅ تم الحذف"); st.rerun()
-                    else: st.error("الاسم غلط")
+                    delete_account_db(r["id"],code,str(r.get("parent_code","")))
+                    st.session_state.editing_code = None; st.success("✅ تم الحذف"); st.rerun()
             with col_c2:
                 if st.button("❌ إلغاء", use_container_width=True, key=f"cancel_del_{code}"):
                     st.session_state.editing_code = None; st.rerun()
