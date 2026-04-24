@@ -364,6 +364,7 @@ if os.path.exists(excel_path):
 if "drill_path"    not in st.session_state: st.session_state.drill_path    = []
 if "adding_to"     not in st.session_state: st.session_state.adding_to     = None
 if "editing_code"  not in st.session_state: st.session_state.editing_code  = None
+if "expanded"      not in st.session_state: st.session_state.expanded       = {}  # code → True/False
 
 # ══════════════════ Sidebar ══════════════════
 with st.sidebar:
@@ -492,61 +493,87 @@ def render_edit_delete_inline(code):
                 if st.button("❌ إلغاء", use_container_width=True, key=f"cancel_del_{code}"):
                     st.session_state.editing_code = None; st.rerun()
 
-# ══════════════════ Drill-down ══════════════════
-def render_drill_down(parent_code=None):
+# ══════════════════ Expandable Tree ══════════════════
+def render_tree(parent_code=None, depth=0):
+    """شجرة قابلة للطي والفتح"""
     cumulative = get_cumulative_balances_all()
-    if st.session_state.drill_path:
-        nav_html = '<div class="nav-bar">🏠 الكل'
-        for code,name in st.session_state.drill_path:
-            nav_html += f' <span class="nav-sep">←</span> <span class="nav-active">{name}</span>'
-        nav_html += '</div>'
-        st.markdown(nav_html, unsafe_allow_html=True)
-        if st.button("⬅️ رجوع"):
-            st.session_state.drill_path.pop(); st.session_state.adding_to = None; st.rerun()
+
     if parent_code is None:
         conn = get_conn()
-        current_df = pd.read_sql("SELECT * FROM chart_of_accounts WHERE (parent_code='' OR parent_code IS NULL) ORDER BY CAST(code AS INTEGER)", conn)
-        conn.close(); current_level = 0
+        current_df = pd.read_sql(
+            "SELECT * FROM chart_of_accounts WHERE (parent_code='' OR parent_code IS NULL) ORDER BY CAST(code AS INTEGER)",
+            conn)
+        conn.close()
     else:
         current_df = get_children_by_parent(parent_code)
-        pr = get_account_by_code(parent_code)
-        current_level = int(pr["acc_level"]) if pr is not None else 0
-    if current_df.empty and parent_code is not None:
-        st.markdown('<div class="info-box">📄 حساب نهائي — الحركات المالية تُسجَّل عليه مباشرةً</div>', unsafe_allow_html=True)
-    else:
-        for _,r in current_df.iterrows():
-            code = str(r["code"]); name = str(r["name"])
-            is_leaf = int(r.get("is_leaf",1))==1
-            icon = "📄" if is_leaf else "📁"
-            d,c = cumulative.get(code,(0,0)); bal = d-c
-            has_bal = (d+c)>0; color = "#c92a2a" if bal>=0 else "#2f9e44"; lbl = "مدين" if bal>=0 else "دائن"
-            col1,col2,col3 = st.columns([5,2,1])
-            with col1:
-                label = f"{icon}  {name}" + ("  ◀" if not is_leaf else "")
-                if st.button(label, key=f"d_{code}", use_container_width=True):
-                    if not is_leaf:
-                        st.session_state.drill_path.append((code,name)); st.session_state.adding_to = None; st.rerun()
-            with col2:
-                if has_bal:
-                    st.markdown(f'<div style="text-align:left;padding-top:6px"><b style="color:{color}">{abs(bal):,.2f}</b><br><span style="font-size:.72rem;color:{color}">{lbl}</span></div>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<div style="text-align:left;padding-top:10px;color:#ccc">—</div>', unsafe_allow_html=True)
-            with col3:
-                if is_admin and st.button("⚙️", key=f"edit_{code}", help="تعديل أو حذف"):
-                    st.session_state.editing_code = code; st.rerun()
-    if is_admin and parent_code is not None and current_level < 5:
-        st.markdown("---")
-        parent_row_for_add = get_account_by_code(parent_code)
-        if parent_row_for_add is not None:
-            if st.session_state.adding_to == parent_code:
-                render_add_form(parent_row_for_add)
+
+    if current_df.empty:
+        return
+
+    for _, r in current_df.iterrows():
+        code    = str(r["code"])
+        name    = str(r["name"])
+        is_leaf = int(r.get("is_leaf", 1)) == 1
+        icon    = "📄" if is_leaf else "📁"
+        d, c    = cumulative.get(code, (0,0))
+        bal     = d - c
+        has_bal = (d+c) > 0
+        color   = "#c92a2a" if bal >= 0 else "#2f9e44"
+        lbl     = "مدين" if bal >= 0 else "دائن"
+        is_expanded = st.session_state.expanded.get(code, False)
+
+        col1, col2, col3 = st.columns([5, 2, 1])
+        with col1:
+            if is_leaf:
+                # حساب نهائي — بدون زرار فتح
+                st.markdown(
+                    f'<div style="padding:0.5rem 0.8rem;margin:{depth*8}px 0 2px {depth*20}px;background:white;border-radius:8px;border-right:3px solid #e8ecf8;color:#374151;font-size:0.9rem">📄 &nbsp;{name}</div>',
+                    unsafe_allow_html=True)
             else:
-                if st.button(f"➕ إضافة حساب تحت: {parent_row_for_add['name']}", use_container_width=True):
-                    st.session_state.adding_to = parent_code; st.rerun()
-    elif parent_code is not None and current_level >= 5:
-        st.markdown('<div class="danger-box">🚫 لا يمكن إضافة حسابات — وصلت للمستوى الأقصى (6)</div>', unsafe_allow_html=True)
+                arrow = "▼" if is_expanded else "◀"
+                label = f"{arrow} {icon}  {name}"
+                btn_style = "margin-right:" + str(depth*20) + "px"
+                if st.button(label, key=f"tree_{code}", use_container_width=True):
+                    st.session_state.expanded[code] = not is_expanded
+                    st.session_state.adding_to = None
+                    st.rerun()
+        with col2:
+            if has_bal:
+                st.markdown(
+                    f'<div style="text-align:left;padding-top:6px"><b style="color:{color}">{abs(bal):,.2f}</b><br><span style="font-size:.72rem;color:{color}">{lbl}</span></div>',
+                    unsafe_allow_html=True)
+            else:
+                st.markdown('<div style="text-align:left;padding-top:10px;color:#ccc">—</div>', unsafe_allow_html=True)
+        with col3:
+            if is_admin:
+                if st.button("⚙️", key=f"edit_{code}", help="تعديل أو حذف"):
+                    st.session_state.editing_code = code
+                    st.rerun()
+
+        # لو مفتوح → اعرض الأولاد
+        if not is_leaf and is_expanded:
+            render_tree(code, depth+1)
+            # زر إضافة
+            if is_admin and int(r.get("acc_level",1)) < 5:
+                pad = (depth+1)*20
+                if st.session_state.adding_to == code:
+                    parent_row = get_account_by_code(code)
+                    if parent_row is not None:
+                        render_add_form(parent_row)
+                else:
+                    cols_add = st.columns([1, 5])
+                    with cols_add[1]:
+                        if st.button(f"➕ إضافة تحت: {name}", key=f"add_{code}", use_container_width=True):
+                            st.session_state.adding_to = code
+                            st.rerun()
+
+    # تعديل/حذف inline
     if st.session_state.editing_code:
         render_edit_delete_inline(st.session_state.editing_code)
+
+
+def render_drill_down(parent_code=None):
+    render_tree(parent_code, depth=0)
 
 # ══════════════════ Pages ══════════════════
 
