@@ -373,7 +373,7 @@ with st.sidebar:
 
     pages = ["🏠  الرئيسية", "📋  دليل الحسابات", "⚖️  ميزان المراجعة", "📒  دفتر الأستاذ"]
     if is_admin:
-        pages += ["✏️  تعديل / حذف", "📤  استيراد البيانات"]
+        pages += ["📤  استيراد البيانات"]
 
     page = st.radio("nav", pages, label_visibility="collapsed")
 
@@ -425,9 +425,18 @@ def render_add_form(parent_row):
 
 # ══════════════════ Edit/Delete ══════════════════
 def render_edit_delete_inline(code):
-    r = get_account_by_code(code)
-    if r is None: st.session_state.editing_code = None; return
-    path = get_path(r); is_leaf = int(r.get("is_leaf",1))==1
+    # نجيب الحساب مباشرة من DB بدون cache
+    conn = get_conn()
+    df_r = pd.read_sql("SELECT * FROM chart_of_accounts WHERE code=?", conn, params=(str(code),))
+    conn.close()
+    if df_r.empty: st.session_state.editing_code = None; return
+    r = df_r.iloc[0]
+    path = get_path(r)
+    # نتحقق من is_leaf مباشرة من DB
+    conn2 = get_conn()
+    is_leaf = conn2.execute("SELECT is_leaf FROM chart_of_accounts WHERE code=?", (str(code),)).fetchone()
+    is_leaf = int(is_leaf[0]) == 1 if is_leaf else True
+    conn2.close()
     has_tx = has_transactions(code)
     cumulative = get_cumulative_balances_all()
     d,c = cumulative.get(code,(0,0)); bal = d-c
@@ -472,8 +481,9 @@ def render_edit_delete_inline(code):
         if not is_leaf:
             st.error("❌ لا يمكن حذف حساب رئيسي — احذف الحسابات الفرعية أولاً")
         else:
-            st.warning(f"⚠️ هتحذف: **{r['name']}** (كود: {code})")
-            confirm = st.text_input("اكتب اسم الحساب للتأكيد", key=f"conf_{code}")
+            st.warning(f"⚠️ هتحذف الحساب: **{r['name']}**")
+            confirm = st.text_input("اكتب اسم الحساب للتأكيد بالظبط", key=f"conf_{code}",
+                                    placeholder=str(r['name']))
             col_d,col_c2 = st.columns(2)
             with col_d:
                 if st.button("🗑️ تأكيد الحذف", type="primary", use_container_width=True):
@@ -736,22 +746,6 @@ elif page == "📒  دفتر الأستاذ":
 
                 csv = display.to_csv(index=False, encoding="utf-8-sig")
                 st.download_button(f"⬇️ تحميل دفتر {name}", data=csv, file_name=f"دفتر_{code}.csv", mime="text/csv")
-
-elif page == "✏️  تعديل / حذف" and is_admin:
-    st.markdown('<div class="page-header"><p class="ph-title">✏️ تعديل أو حذف حساب</p><p class="ph-sub">ابحث عن الحساب وعدّله أو احذفه</p></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">💡 يمكنك أيضاً التعديل والحذف من داخل شجرة الحسابات بالضغط على ⚙️</div>', unsafe_allow_html=True)
-    search = st.text_input("🔍 ابحث عن الحساب بالاسم أو الكود", placeholder="اكتب هنا...")
-    df = load_accounts(search) if search else pd.DataFrame()
-    if not df.empty:
-        opts = {}
-        for _,r in df.iterrows():
-            is_leaf = int(r.get("is_leaf",1))==1
-            opts[f"{'📄' if is_leaf else '📁'} {r['code']} — {r['name']}"] = r
-        sel = st.selectbox("اختر الحساب", list(opts.keys()))
-        r   = opts[sel]
-        render_edit_delete_inline(str(r["code"]))
-    elif search:
-        st.info("لا توجد نتائج")
 
 elif page == "📤  استيراد البيانات" and is_admin:
     st.markdown('<div class="page-header"><p class="ph-title">📤 استيراد البيانات</p><p class="ph-sub">رفع شجرة الحسابات وحركات دفتر الأستاذ</p></div>', unsafe_allow_html=True)
