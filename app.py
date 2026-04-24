@@ -3,9 +3,9 @@ import streamlit as st
 # 1. قائمة الإيميلات المصرح لها وصلاحياتها
 # يمكنك إضافة إيميلات الموظفين هنا بكل سهولة
 ALLOWED_USERS = {
-    "waleed@gmail.com": {"name": "أستاذ وليد", "role": "Admin","pass" : www},
-    "assistant@gmail.com": {"name": "المساعد الخبير", "role": "User"},"pass" : www,
-    "new_staff@gmail.com": {"name": "الموظف الجديد", "role": "User"},"pass" : www
+    "waleed@gmail.com": {"name": "أستاذ وليد", "role": "Admin","pass" : "www"},
+    "assistant@gmail.com": {"name": "المساعد الخبير", "role": "User"},"pass" : "www",
+    "new_staff@gmail.com": {"name": "الموظف الجديد", "role": "User"},"pass" : "www"
 }
 
 def login_screen():
