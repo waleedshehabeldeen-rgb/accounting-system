@@ -318,15 +318,16 @@ def import_accounts_df(df, mode="add"):
         parsed.append((levels, code, name, lvl))
 
     ins = skp = 0
-    for levels, code, name, lvl in parsed:
+    if parsed:
         try:
-            execute_query("""INSERT INTO chart_of_accounts
+            execute_many("""INSERT INTO chart_of_accounts
                 (level1,level2,level3,level4,level5,level6,code,name,acc_level,is_leaf,parent_code)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,1,'')
                 ON CONFLICT (code) DO NOTHING""",
-                (*levels, code, name, lvl))
-            ins += 1
-        except: skp += 1
+                [(*levels, code, name, lvl) for levels,code,name,lvl in parsed])
+            ins = len(parsed)
+        except Exception as e:
+            st.error(f"خطأ في الإدراج: {e}")
 
     # تحديد parent_code
     all_rows = df_from_query("SELECT code,level1,level2,level3,level4,level5,level6,acc_level FROM chart_of_accounts")
@@ -350,14 +351,17 @@ def import_accounts_df(df, mode="add"):
                 parent_code = levels_to_code.get(tuple(parent_lvls), "")
             updates.append((parent_code, code))
 
+        # تحديث parent_code دفعة واحدة
         execute_many("UPDATE chart_of_accounts SET parent_code=%s WHERE code=%s", updates)
 
-        # تحديد is_leaf
+        # تحديد is_leaf دفعة واحدة
         parent_codes = df_from_query("SELECT DISTINCT parent_code FROM chart_of_accounts WHERE parent_code!=''")
         execute_query("UPDATE chart_of_accounts SET is_leaf=1")
         if not parent_codes.empty:
-            for pc in parent_codes["parent_code"].tolist():
-                execute_query("UPDATE chart_of_accounts SET is_leaf=0 WHERE code=%s", (pc,))
+            pcs = parent_codes["parent_code"].tolist()
+            conn = get_conn(); cur = conn.cursor()
+            cur.execute("UPDATE chart_of_accounts SET is_leaf=0 WHERE code = ANY(%s)", (pcs,))
+            conn.commit(); cur.close(); conn.close()
 
     get_all_leaf_accounts.clear(); get_cumulative_balances_all.clear()
     return ins, skp
@@ -720,9 +724,11 @@ elif page == "📤  استيراد البيانات" and is_admin:
                 total_now,_,_,_ = get_stats()
                 st.info(f"📊 الحسابات الموجودة: {total_now:,}")
                 mode = st.radio("طريقة الاستيراد",["➕ أضف للموجود","🔄 امسح وابدأ من أول"], key="acc_mode")
-                if st.button("🚀 استيراد شجرة الحسابات", use_container_width=True):
-                    with st.spinner("جاري الاستيراد..."):
+                if st.button("🚀 استيراد شجرة الحسابات", use_container_width=True, disabled=st.session_state.get("importing_acc", False)):
+                    st.session_state["importing_acc"] = True
+                    with st.spinner("جاري الاستيراد... لا تضغط أي زرار حتى ينتهي ⏳"):
                         ins,skp = import_accounts_df(df_up, "add" if "أضف" in mode else "replace")
+                    st.session_state["importing_acc"] = False
                     st.success(f"✅ أضيف: {ins:,} | تخطى: {skp:,}"); st.rerun()
             except Exception as e: st.error(f"❌ خطأ: {e}")
     with tab2:
@@ -736,8 +742,10 @@ elif page == "📤  استيراد البيانات" and is_admin:
                 _,_,_,j_total = get_stats()
                 st.info(f"📊 الحركات الموجودة: {j_total:,}")
                 mode_j = st.radio("طريقة الاستيراد",["➕ أضف للموجود","🔄 امسح وابدأ من أول"], key="j_mode")
-                if st.button("🚀 استيراد الحركات", use_container_width=True):
-                    with st.spinner("جاري الاستيراد..."):
+                if st.button("🚀 استيراد الحركات", use_container_width=True, disabled=st.session_state.get("importing_j", False)):
+                    st.session_state["importing_j"] = True
+                    with st.spinner("جاري الاستيراد... لا تضغط أي زرار حتى ينتهي ⏳"):
                         ins_j = import_journal_df(df_j, "add" if "أضف" in mode_j else "replace")
+                    st.session_state["importing_j"] = False
                     st.success(f"✅ تم استيراد {ins_j:,} حركة!"); st.rerun()
             except Exception as e: st.error(f"❌ خطأ: {e}")
