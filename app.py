@@ -168,8 +168,17 @@ label{color:#2d3f6e !important;font-weight:600 !important;font-size:0.88rem !imp
 .danger-box{background:#fff0f0;border:1px solid #c92a2a;border-radius:8px;padding:0.8rem 1rem;margin-bottom:1rem;color:#c92a2a;font-size:0.88rem;}
 .add-form-box{background:white;border-radius:12px;padding:1.5rem;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:1px solid #e8ecf8;margin-top:1rem;}
 .ledger-header{background:white;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1rem;box-shadow:0 1px 8px rgba(0,0,0,0.06);border-right:5px solid #2f9e44;}
-[data-testid="stFileUploader"] section{background:white !important;border:2px dashed #3b5bdb !important;border-radius:10px !important;}
-[data-testid="stFileUploader"] section *{color:#2d3f6e !important;}
+/* إخفاء Streamlit toolbar */
+[data-testid="stToolbar"] { display:none !important; }
+[data-testid="stDecoration"] { display:none !important; }
+header[data-testid="stHeader"] { background:transparent !important; }
+#MainMenu { display:none !important; }
+footer { display:none !important; }
+
+/* fix upload button */
+[data-testid="stFileUploaderDropzone"] button { background:#3b5bdb !important; color:white !important; border-radius:8px !important; font-family:'Cairo',sans-serif !important; }
+[data-testid="stFileUploader"] section { background:white !important; border:2px dashed #3b5bdb !important; border-radius:10px !important; }
+[data-testid="stFileUploader"] section * { color:#2d3f6e !important; }
 </style>
 """, unsafe_allow_html=True)
 
