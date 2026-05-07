@@ -9,8 +9,6 @@ import re
 import os as _os
 
 def _get_mysql_config():
-    # لو على Streamlit Cloud → يقرأ من Secrets
-    # لو على جهازك المحلي → localhost
     try:
         return {
             "host":     st.secrets["mysql"]["host"],
@@ -19,9 +17,7 @@ def _get_mysql_config():
             "password": st.secrets["mysql"]["password"],
             "database": st.secrets["mysql"]["database"],
             "charset":  "utf8mb4",
-            "ssl_ca":   st.secrets["mysql"].get("ssl_ca", None),
-            "ssl_verify_cert": True,
-            "ssl_verify_identity": False,
+            "ssl_disabled": False,
         }
     except:
         return {
